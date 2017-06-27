@@ -100,7 +100,7 @@ for location in databases:
             if "steering" not in line:
                 lines.append(line)
 
-batch_size = 10
+batch_size = 1
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 train_generator = generator(train_samples, batch_size)
 validation_generator = generator(validation_samples, batch_size)
@@ -141,7 +141,7 @@ model.compile(loss='mse', optimizer='adam')
 #steps_per_epoch=len(np.unique(train_samples))/batch_size
 history_object = model.fit_generator(train_generator, samples_per_epoch=len(train_samples)/batch_size, 
                                      validation_data=validation_generator, nb_val_samples=len(validation_samples)/batch_size, 
-                                     nb_epoch=20, callbacks=[checkpointer])
+                                     nb_epoch=3, callbacks=[checkpointer])
 
 model.save(modelEnd)
 model.save(modelName)
