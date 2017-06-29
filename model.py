@@ -31,7 +31,7 @@ def normalize_img(img):
     cv2.normalize(img, img_norm, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
     return img_norm
 
-def augment_lighting(image):
+def augment_lighting(image, filename):
     if random.randint(0, 1) == 1:
         # adjust brightness with random intensity to simulate driving in different lighting conditions 
         image = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
@@ -39,8 +39,10 @@ def augment_lighting(image):
         image[:,:,2] = image[:,:,2]*random_bright
     return cv2.cvtColor(image,cv2.COLOR_HSV2RGB)
 
-def augment_image_rotation(image, steering):
+def augment_image_translate(image, steering, filename):
     if random.randint(0, 1) == 1:
+        if visualize == True:
+            cv2.imwrite(filename,image)
         rows, cols, _ = image.shape
         transRange = 100
         numPixels = 10
@@ -50,17 +52,19 @@ def augment_image_rotation(image, steering):
         transY = numPixels * np.random.uniform() - numPixels/2
         transMat = np.float32([[1, 0, transX], [0, 1, transY]])
         image = cv2.warpAffine(image, transMat, (cols, rows))
+        if visualize == True:
+            cv2.imwrite("aug_img_trans"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     return image, steering
 
 
-def augment_image(image, steering):
-    image = augment_lighting(image)
-    image, steering = augment_image_rotation(image, steering)
-    image, steering = augment_steering(image, steering)
+def augment_image(image, steering, filename):
+    image = augment_lighting(image, filename)
+    image, steering = augment_image_translate(image, steering, filename)
+    image, steering = augment_steering(image, steering, filename)
     return image, steering
         
 
-def augment_steering(image, steering):
+def augment_steering(image, steering, filename):
         index= random.randint(0, 1)
         #index = 1
         if index == 1:
@@ -70,14 +74,15 @@ def augment_steering(image, steering):
     
 
 
-def generator(samples, batch_size=32):
+def generator(samples, batch_size=32, augment_data=False):
     #num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
-        sklearn.utils.shuffle(samples)
+        samples = sklearn.utils.shuffle(samples)
         #for offset in range(0, num_samples, batch_size):
         batch_samples = samples[0:batch_size]
         images = []
         measurements = []
+        filenames = []
         for batch_sample in batch_samples:
             if float(batch_sample[6]) < 0.1:
                 continue # Ignore when vehicle is static
@@ -92,7 +97,7 @@ def generator(samples, batch_size=32):
                 assert image is not None
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 images.append(image)
-                
+                filenames.append(filename[-1])
                 if i == 0:
                     measurements.append(float(batch_sample[3]))
                 elif i == 1:
@@ -103,20 +108,24 @@ def generator(samples, batch_size=32):
         # trim image to only see section with road
         #images = normalize(np.array(images))
         images = np.array(images)
-        augmented_images, augmented_measurements = [], []
-        for image, steering in zip(images, measurements):
-            if abs(steering) < 0.0001:
-                #count += 1
-                #if count % drop_steering_samples == 0:
-                if random.randint(0, 1) == 1:
-                    aug_image, aug_steering = augment_image(image, steering)
-            else:
-                aug_image, aug_steering = augment_image(image, steering)
-                augmented_images.append(aug_image)
-                augmented_measurements.append(aug_steering)
-                        
-        x_train = np.array(augmented_images)
-        y_train = np.array(augmented_measurements)
+        if augment_data == True:
+            augmented_images, augmented_measurements = [], []
+            for image, steering, filename in zip(images, measurements, filenames):
+                if abs(steering) < 0.0001:
+                    #count += 1
+                    #if count % drop_steering_samples == 0:
+                    if random.randint(0, 1) == 1:
+                        aug_image, aug_steering = augment_image(image, steering, filename)
+                else:
+                    aug_image, aug_steering = augment_image(image, steering, filename)
+                    augmented_images.append(aug_image)
+                    augmented_measurements.append(aug_steering)
+                            
+            x_train = np.array(augmented_images)
+            y_train = np.array(augmented_measurements)
+        else:
+            x_train = np.array(images)
+            y_train = np.array(measurements)
         #print('Size x_train {0}, Size y_train {1}'.format(len(x_train),len(y_train)))
         yield sklearn.utils.shuffle(x_train, y_train) 
 
@@ -149,7 +158,7 @@ def visualize_steering(lines):
     
 
 visualize = False
-batch_size = 1
+batch_size = 32
 drop_steering_samples = 2     
 correction = 0.15 # TODO: Tweak to improve  
     
@@ -175,8 +184,9 @@ if visualize == True:
     visualize_steering(lines)
 
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
-train_generator = generator(train_samples, batch_size)
-validation_generator = generator(validation_samples, batch_size)
+print(train_samples[-1])
+train_generator = generator(train_samples, batch_size, True)
+validation_generator = generator(validation_samples, batch_size, False)
 #train_generator = np.array(train_generator)
 #validation_generator = np.array(validation_generator)
 #print('Number of training images: {0}, Number of validation images: {1}'.format(str(len(train_generator)), str(len(validation_generator))))
@@ -206,6 +216,9 @@ model.add(Dense(10))
 model.add(Dense(1))
 
 for i in range(0,10):
+    print('####################################')
+    print('Training Test Case {0}'.format(i))
+    print('####################################')
     test_num = 'test_' + str(i)
     modelName = test_num+'_model_checkpoint.h5'
     modelEnd = test_num+'_model_END.h5'
