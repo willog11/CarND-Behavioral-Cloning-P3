@@ -18,8 +18,8 @@ The goals / steps of this project are the following:
 [image1]: ./report_images/NVIDIA_model.png
 [image2]:  ./report_images/aug_img_lighting_pre.jpg
 [image3]:  ./report_images/aug_img_lighting_post.jpg
-[image4]:  ./report_images/NVIDIA_model.png
-[image5]:  ./report_images/NVIDIA_model.png
+[image4]:  ./report_images/aug_img_trans_pre.png
+[image5]:  ./report_images/aug_img_trans_post.png
 [image6]:  ./report_images/NVIDIA_model.png
 [image7]:  ./report_images/NVIDIA_model.png
 
@@ -118,7 +118,7 @@ def augment_lighting(image, filename):
 To augment the lighting conditions the image is converted to HSV and then randomly tweak the V color space. By doing this the image either gets brighter or darker. From there it is converted back to RGB
 
 The image on the left is the original image, whislt the image on the right has been made darker by this augmentation. This is very important as the bonus track contains a lot of shadows whilst the first track is generally very bright.
-![alt text] (image1) ![alt text] (image2)
+![alt text][image2] ![alt text][image3]
 
 ** Translate the image **
 
@@ -148,7 +148,10 @@ def augment_image_translate(image, steering, filename):
 ~~~
 
 As can be seen above a range of 100 pixels in the x axis and 10 in the y was set to limit the amount the image can be shifted. Also np.random.uniform() is used to generate a random value between 0-1 to scale the shifting by.
-Finally the image augmentation is applied to both X and Y axis, also the steering is shifted according to our shift per pixel (along x axis) of 0.004
+Finally the image augmentation is applied to both X and Y axis, also the steering is shifted according to our shift per pixel (along x axis) of 0.004.
+
+The following images show this augmentation: Left is pre shift and right is post
+![alt text][image4] ![alt text][image5]
 
 ** Flip the image **
 
