@@ -11,7 +11,7 @@ import numpy as np
 import random
 
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, Convolution2D, Cropping2D, Dropout, Lambda, BatchNormalization
+from keras.layers import Flatten, Dense, Convolution2D, Cropping2D, Dropout, Lambda
 from sklearn.model_selection import train_test_split
 import sklearn
 import os.path
@@ -36,7 +36,6 @@ def augment_lighting(image, filename):
     if random.randint(0, 1) == 1:
         if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
             cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-        # adjust brightness with random intensity to simulate driving in different lighting conditions 
         aug_image = np.float32(np.copy(image))
         aug_image = cv2.cvtColor(aug_image,cv2.COLOR_RGB2HSV)
         random_bright = .25+np.random.uniform()
@@ -117,17 +116,15 @@ def generator(samples, batch_size=32, augment_data=False):
                 if i == 0:
                     measurements.append(float(batch_sample[3]))
                 elif i == 1:
-                    measurements.append(float(batch_sample[3]) + correction) # Left images
+                    measurements.append(float(batch_sample[3]) + steer_correction) # Left images
                 else:
-                    measurements.append(float(batch_sample[3]) - correction) # Right images
+                    measurements.append(float(batch_sample[3]) - steer_correction) # Right images
 
         images = np.array(images)
         if augment_data == True:
             augmented_images, augmented_measurements = [], []
             for image, steering in zip(images, measurements):
-                if abs(steering) < 0.0001:
-                    #count += 1
-                    #if count % drop_steering_samples == 0:
+                if abs(steering) < 0.0001: # Check for straight driving and downsample
                     if random.randint(0, 1) == 1:
                         aug_image, aug_steering = augment_image(image, steering)
                 else:
@@ -146,18 +143,17 @@ def generator(samples, batch_size=32, augment_data=False):
 def visualize_steering(lines):
     steering = []
     augmented_steering = []
-    count = 0
     for line in lines:
         steering.append(float(line[3]))
         if abs(float(line[3])) < 0.0001:
-                count += 1
-                if count % drop_steering_samples == 0:
+                if random.randint(0, 1) == 1:  
                     augmented_steering.append(float(line[3]))
         else:
             augmented_steering.append(float(line[3]))
     
     plt.figure(figsize=(11, 11))
     plt.xlabel('Steering')
+    plt.title('Original Steering Distribution')
     binwidth = 0.1
     num, bins, patches = plt.hist(steering, bins=np.arange(min(steering) - binwidth, max(steering) + binwidth, binwidth),  normed=1, histtype='bar')
     plt.grid()
@@ -165,10 +161,11 @@ def visualize_steering(lines):
     
     plt.figure(figsize=(11, 11))
     plt.xlabel('Steering')
+    plt.title('Down-sampled Steering Distribution')
     binwidth = 0.1
     num, bins, patches = plt.hist(augmented_steering, bins=np.arange(min(augmented_steering) - binwidth, max(augmented_steering) + binwidth, binwidth),  normed=1, histtype='bar')
     plt.grid()
-    plt.savefig("steering_dist_downsampled_straight.jpeg", bbox_inches='tight')
+    plt.savefig("steering_dist_downsampled.jpeg", bbox_inches='tight')
 
 def visualize_aug_images(lines, batch_size = 5): 
     directory = "aug_images"
@@ -181,12 +178,10 @@ def visualize_aug_images(lines, batch_size = 5):
             image, filename = get_img(batch_sample[i])
             augment_image(image, 0, filename)
         
-
-visualize = False
-batch_size = 32
-drop_steering_samples = 2     
-correction = 0.15 
-count_aug_trans = 0
+# Tunable parameters for algorithm
+visualize = True
+batch_size = 32  
+steer_correction = 0.15 
     
 
 print('Searching for images...')
@@ -211,6 +206,7 @@ if visualize == True:
     visualize_aug_images(lines)
 
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
+print('Trainging set size {0}, Validation set size {1}'.format(len(train_samples), len(validation_samples)))
 train_generator = generator(train_samples, batch_size, True)
 validation_generator = generator(validation_samples, batch_size, False)
 
