@@ -38,7 +38,6 @@ def augment_lighting(image, filename):
             cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         # adjust brightness with random intensity to simulate driving in different lighting conditions 
         aug_image = np.float32(np.copy(image))
-        #aug_image.convertTo(aug_image, cv2.CV_32FC1)
         aug_image = cv2.cvtColor(aug_image,cv2.COLOR_RGB2HSV)
         random_bright = .25+np.random.uniform()
         aug_image[:,:,2] = aug_image[:,:,2]*random_bright
@@ -53,7 +52,6 @@ def augment_image_translate(image, steering, filename):
         if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
             cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         aug_image = np.float32(np.copy(image))
-        #aug_image.convertTo(aug_image, cv2.CV_32FC1)
         rows, cols, _ = aug_image.shape
         trans_range_x = 100
         trans_range_y = 10
@@ -81,8 +79,7 @@ def augment_flip(image, steering, filename):
     if random.randint(0, 1) == 1:   
         if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
             cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))    
-        aug_image = np.float32(np.copy(image))
-        #aug_image.convertTo(aug_image, cv2.CV_32FC1)      
+        aug_image = np.float32(np.copy(image))    
         aug_image = cv2.flip(aug_image,1)
         aug_steering = steering * -1
         if visualize == True and filename != "":
@@ -106,10 +103,8 @@ def get_img(line):
 
 
 def generator(samples, batch_size=32, augment_data=False):
-    #num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
         samples = sklearn.utils.shuffle(samples)
-        #for offset in range(0, num_samples, batch_size):
         batch_samples = samples[0:batch_size]
         images = []
         measurements = []
@@ -126,8 +121,6 @@ def generator(samples, batch_size=32, augment_data=False):
                 else:
                     measurements.append(float(batch_sample[3]) - correction) # Right images
 
-        # trim image to only see section with road
-        #images = normalize(np.array(images))
         images = np.array(images)
         if augment_data == True:
             augmented_images, augmented_measurements = [], []
@@ -182,7 +175,6 @@ def visualize_aug_images(lines, batch_size = 5):
     if not os.path.exists(directory):
         os.makedirs(directory)
     samples = sklearn.utils.shuffle(lines)
-    #for offset in range(0, num_samples, batch_size):
     batch_samples = samples[0:batch_size]
     for batch_sample in batch_samples:
         for i in range(0,3):
@@ -193,7 +185,7 @@ def visualize_aug_images(lines, batch_size = 5):
 visualize = False
 batch_size = 32
 drop_steering_samples = 2     
-correction = 0.15 # TODO: Tweak to improve  
+correction = 0.15 
 count_aug_trans = 0
     
 
@@ -206,7 +198,6 @@ databases = ['./data/driving_log.csv',
             './data_dirt_bends/driving_log.csv',
             './data_track_2/driving_log.csv',
             './data_track_2_t2/driving_log.csv']
-#databases = ['./data/driving_log_short.csv']
 
 for location in databases:
     with open(location) as csvfile:
@@ -222,30 +213,19 @@ if visualize == True:
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 train_generator = generator(train_samples, batch_size, True)
 validation_generator = generator(validation_samples, batch_size, False)
-#train_generator = np.array(train_generator)
-#validation_generator = np.array(validation_generator)
-#print('Number of training images: {0}, Number of validation images: {1}'.format(str(len(train_generator)), str(len(validation_generator))))
 
 print('Beginning network training...')
 model = Sequential()
-#model.add(BatchNormalization(axis=1, input_shape=(160,320,3)))
-#model.add(Lambda(normalize, input_shape=(160,320,3)))
 model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(160,320,3)))
 model.add(Cropping2D(((70,0), (0,0))))
 model.add(Convolution2D(24, 5,5,subsample=(2,2), activation='relu'))
-#model.add(Dropout(0.5))
 model.add(Convolution2D(36, 5,5,subsample=(2,2), activation='relu'))
-#model.add(Dropout(0.5))
 model.add(Convolution2D(48, 5,5,subsample=(2,2), activation='relu'))
 model.add(Dropout(0.5))
 model.add(Convolution2D(64, 3,3, activation='relu'))
-#model.add(Dropout(0.5))
 model.add(Convolution2D(64, 3,3, activation='relu'))
-#model.add(Dropout(0.5))
 model.add(Flatten())
-#model.add(Dropout(0.5))
 model.add(Dense(100))
-#model.add(Dropout(0.5))
 model.add(Dense(50))
 model.add(Dense(10))
 model.add(Dense(1))
@@ -262,16 +242,12 @@ for i in range(0,10):
     csv_logger = CSVLogger(csvName)
     
     model.compile(loss='mse', optimizer='adam')
-    #model.fit(x_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=5)
-    #steps_per_epoch=len(np.unique(train_samples))/batch_size
     history_object = model.fit_generator(train_generator, samples_per_epoch=len(train_samples)/batch_size, 
                                          validation_data=validation_generator, nb_val_samples=len(validation_samples)/batch_size, 
                                          nb_epoch=5, callbacks=[checkpointer, csv_logger])
     
     model.save(modelEnd)
     model.save(modelName)
-    ### print the keys contained in the history object
-    #print(history_object.history.keys())
     
     ### plot the training and validation loss for each epoch
     plt.figure(figsize=(11, 11))
