@@ -91,11 +91,12 @@ The following  random image augmentation was applied:
 2. Translating the image in the X and Y direction which simulates hills and creates additional data
 3. Flipping the image to balance any biasing due to track layout. Biasing for example can be introduced from track 1 as there are more left turns than right.
 
-In steps 2 and 3 above the steering value (degs) also had to be updated accordingly. The following blocks of code will give a breakdown of how each augmentation technique was applied
+In steps 2 and 3 above the steering value (degs) also had to be updated accordingly. The following blocks of code will give a breakdown of how each augmentation technique was applied.
+In all cases randint is used very often to create a random probability that augmentation will be to images. 
 
 ** Change image lighting **
 Each training image had a random lighting augmentation applied. Across all 3 techniques images are first randomly selected for augmentation and also then have a random augmentation applied accordingly. 
-This ensures that the network always receives new data and does not overfit.
+This ensures that the network always receives new data and does not overfitting the data.
 
 ~~~
 def augment_lighting(image, filename):
@@ -114,12 +115,40 @@ def augment_lighting(image, filename):
         return image
 ~~~
 
-The randint() is used very often to create a random probability that augmentation will be applied. To augment the lighting conditions we convert the image to HSV and then randomly tweak the V color space. By doing this the image either gets brighter or darker.
+To augment the lighting conditions the image is converted to HSV and then randomly tweak the V color space. By doing this the image either gets brighter or darker. From there it is converted back to RGB
 
 The image on the left is the original image, whislt the image on the right has been made darker by this augmentation. This is very important as the bonus track contains a lot of shadows whilst the first track is generally very bright.
 ![alt text] (image1) ![alt text] (image2)
 
 ** Translate the image **
+
+The next step was to shift the image in both X and Y directions.By doing this it simulates hilly conditions which is very prominent in the bonus track. 
+Note also at this point the steering needs to be updated as shift per pixel in the x axis. A shift per pixel value of 0.004 was decided upon through trial and error testing.
+
+~~~
+def augment_image_translate(image, steering, filename):
+    if random.randint(0, 1) == 1:
+        if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
+            cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        aug_image = np.float32(np.copy(image))
+        rows, cols, _ = aug_image.shape
+        trans_range_x = 100
+        trans_range_y = 10
+        steer_shift_px = 0.004
+        trans_x = trans_range_x * np.random.uniform() - trans_range_x/2
+        aug_steering = steering + trans_x * steer_shift_px
+        trans_y = trans_range_y * np.random.uniform() - trans_range_y/2
+        trans_mat = np.float32([[1, 0, trans_x], [0, 1, trans_y]])
+        aug_image = cv2.warpAffine(aug_image, trans_mat, (cols, rows))
+        if visualize == True and filename != "":
+            cv2.imwrite("aug_images/aug_img_trans_"+filename,cv2.cvtColor(aug_image, cv2.COLOR_RGB2BGR))
+        return aug_image, aug_steering
+    else:
+        return image, steering
+~~~
+
+As can be seen above a range of 100 pixels in the x axis and 10 in the y was set to limit the amount the image can be shifted. Also np.random.uniform() is used to generate a random value between 0-1 to scale the shifting by.
+Finally the image augmentation is applied to both X and Y axis, also the steering is shifted according to our shift per pixel (along x axis) of 0.004
 
 ** Flip the image **
 
