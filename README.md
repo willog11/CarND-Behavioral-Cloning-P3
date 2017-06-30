@@ -117,7 +117,7 @@ def augment_lighting(image, filename):
 The randint() is used very often to create a random probability that augmentation will be applied. To augment the lighting conditions we convert the image to HSV and then randomly tweak the V color space. By doing this the image either gets brighter or darker.
 
 The image on the left is the original image, whislt the image on the right has been made darker by this augmentation. This is very important as the bonus track contains a lot of shadows whilst the first track is generally very bright.
-![alt text] [image1] ![alt text] [image2]
+![alt text] (image1) ![alt text] (image2)
 
 ** Translate the image **
 
