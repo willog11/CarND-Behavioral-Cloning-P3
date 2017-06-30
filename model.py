@@ -14,6 +14,7 @@ from keras.models import Sequential
 from keras.layers import Flatten, Dense, Convolution2D, Cropping2D, Dropout, Lambda, BatchNormalization
 from sklearn.model_selection import train_test_split
 import sklearn
+import os.path
 
 import matplotlib
 matplotlib.use('Agg')
@@ -33,44 +34,74 @@ def normalize_img(img):
 
 def augment_lighting(image, filename):
     if random.randint(0, 1) == 1:
+        if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
+            cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
         # adjust brightness with random intensity to simulate driving in different lighting conditions 
-        image = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
+        aug_image = np.float32(np.copy(image))
+        #aug_image.convertTo(aug_image, cv2.CV_32FC1)
+        aug_image = cv2.cvtColor(aug_image,cv2.COLOR_RGB2HSV)
         random_bright = .25+np.random.uniform()
-        image[:,:,2] = image[:,:,2]*random_bright
-    return cv2.cvtColor(image,cv2.COLOR_HSV2RGB)
+        aug_image[:,:,2] = aug_image[:,:,2]*random_bright
+        if visualize == True and filename != "":
+            cv2.imwrite("aug_images/aug_img_lighting_"+filename,cv2.cvtColor(aug_image, cv2.COLOR_HSV2BGR))
+        return cv2.cvtColor(aug_image,cv2.COLOR_HSV2RGB)
+    else:    
+        return image
 
 def augment_image_translate(image, steering, filename):
     if random.randint(0, 1) == 1:
-        if visualize == True:
-            cv2.imwrite(filename,image)
-        rows, cols, _ = image.shape
-        transRange = 100
-        numPixels = 10
-        valPixels = 0.4
-        transX = transRange * np.random.uniform() - transRange/2
-        steering = steering + transX/transRange * 2 * valPixels
-        transY = numPixels * np.random.uniform() - numPixels/2
-        transMat = np.float32([[1, 0, transX], [0, 1, transY]])
-        image = cv2.warpAffine(image, transMat, (cols, rows))
-        if visualize == True:
-            cv2.imwrite("aug_img_trans"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-    return image, steering
+        if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
+            cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+        aug_image = np.float32(np.copy(image))
+        #aug_image.convertTo(aug_image, cv2.CV_32FC1)
+        rows, cols, _ = aug_image.shape
+        trans_range_x = 100
+        trans_range_y = 10
+        steer_shift_px = 0.004
+        trans_x = trans_range_x * np.random.uniform() - trans_range_x/2
+        aug_steering = steering + trans_x * steer_shift_px
+        trans_y = trans_range_y * np.random.uniform() - trans_range_y/2
+        trans_mat = np.float32([[1, 0, trans_x], [0, 1, trans_y]])
+        aug_image = cv2.warpAffine(aug_image, trans_mat, (cols, rows))
+        if visualize == True and filename != "":
+            cv2.imwrite("aug_images/aug_img_trans_"+filename,cv2.cvtColor(aug_image, cv2.COLOR_RGB2BGR))
+        return aug_image, aug_steering
+    else:
+        return image, steering
 
 
-def augment_image(image, steering, filename):
-    image = augment_lighting(image, filename)
-    image, steering = augment_image_translate(image, steering, filename)
-    image, steering = augment_steering(image, steering, filename)
-    return image, steering
+def augment_image(image, steering, filename=""):
+    aug_light = augment_lighting(image, filename)
+    aug_trans, aug_steer_trans = augment_image_translate(aug_light, steering, filename)
+    aug_flip, aug_steer_flip = augment_flip(aug_trans, aug_steer_trans, filename)
+    return aug_flip, aug_steer_flip
         
 
-def augment_steering(image, steering, filename):
-        index= random.randint(0, 1)
-        #index = 1
-        if index == 1:
-            return cv2.flip(image,1), steering*-1.0
-        else:
-            return image, steering
+def augment_flip(image, steering, filename):
+    if random.randint(0, 1) == 1:   
+        if visualize == True and filename != "" and not os.path.isfile(os.getcwd()+"/aug_images/"+filename):
+            cv2.imwrite("aug_images/"+filename,cv2.cvtColor(image, cv2.COLOR_RGB2BGR))    
+        aug_image = np.float32(np.copy(image))
+        #aug_image.convertTo(aug_image, cv2.CV_32FC1)      
+        aug_image = cv2.flip(aug_image,1)
+        aug_steering = steering * -1
+        if visualize == True and filename != "":
+            cv2.imwrite("aug_images/aug_img_flip_"+filename,cv2.cvtColor(aug_image, cv2.COLOR_RGB2BGR))
+        return aug_image, aug_steering
+    else:
+        return image, steering
+        
+def get_img(line):
+    source_path= line
+    filename = source_path.split('\\')
+    if len(filename) > 2:
+        curr_path = './'+ filename[-3]+'/'+ filename[-2]+'/'+ filename[-1]
+    else:
+        curr_path = './'+'data/'+ filename[-2]+'/'+ filename[-1]
+    image = cv2.imread(curr_path)
+    assert image is not None
+    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB) , filename[-1]
+    
     
 
 
@@ -82,22 +113,12 @@ def generator(samples, batch_size=32, augment_data=False):
         batch_samples = samples[0:batch_size]
         images = []
         measurements = []
-        filenames = []
         for batch_sample in batch_samples:
             if float(batch_sample[6]) < 0.1:
                 continue # Ignore when vehicle is static
             for i in range(0,3):
-                source_path= batch_sample[i]
-                filename = source_path.split('\\')
-                if len(filename) > 2:
-                    curr_path = './'+ filename[-3]+'/'+ filename[-2]+'/'+ filename[-1]
-                else:
-                    curr_path = './'+'data/'+ filename[-2]+'/'+ filename[-1]
-                image = cv2.imread(curr_path)
-                assert image is not None
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                image, filename = get_img(batch_sample[i])
                 images.append(image)
-                filenames.append(filename[-1])
                 if i == 0:
                     measurements.append(float(batch_sample[3]))
                 elif i == 1:
@@ -110,14 +131,14 @@ def generator(samples, batch_size=32, augment_data=False):
         images = np.array(images)
         if augment_data == True:
             augmented_images, augmented_measurements = [], []
-            for image, steering, filename in zip(images, measurements, filenames):
+            for image, steering in zip(images, measurements):
                 if abs(steering) < 0.0001:
                     #count += 1
                     #if count % drop_steering_samples == 0:
                     if random.randint(0, 1) == 1:
-                        aug_image, aug_steering = augment_image(image, steering, filename)
+                        aug_image, aug_steering = augment_image(image, steering)
                 else:
-                    aug_image, aug_steering = augment_image(image, steering, filename)
+                    aug_image, aug_steering = augment_image(image, steering)
                     augmented_images.append(aug_image)
                     augmented_measurements.append(aug_steering)
                             
@@ -155,12 +176,25 @@ def visualize_steering(lines):
     num, bins, patches = plt.hist(augmented_steering, bins=np.arange(min(augmented_steering) - binwidth, max(augmented_steering) + binwidth, binwidth),  normed=1, histtype='bar')
     plt.grid()
     plt.savefig("steering_dist_downsampled_straight.jpeg", bbox_inches='tight')
-    
+
+def visualize_aug_images(lines, batch_size = 5): 
+    directory = "aug_images"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    samples = sklearn.utils.shuffle(lines)
+    #for offset in range(0, num_samples, batch_size):
+    batch_samples = samples[0:batch_size]
+    for batch_sample in batch_samples:
+        for i in range(0,3):
+            image, filename = get_img(batch_sample[i])
+            augment_image(image, 0, filename)
+        
 
 visualize = False
 batch_size = 32
 drop_steering_samples = 2     
 correction = 0.15 # TODO: Tweak to improve  
+count_aug_trans = 0
     
 
 print('Searching for images...')
@@ -169,8 +203,9 @@ databases = ['./data/driving_log.csv',
             './data_center/driving_log.csv',
              './data_reverse/driving_log.csv',
             './data_swerve/driving_log.csv',
-            './data_dirt_bends/driving_log.csv']
-#            './data_track_2/driving_log.csv']
+            './data_dirt_bends/driving_log.csv',
+            './data_track_2/driving_log.csv',
+            './data_track_2_t2/driving_log.csv']
 #databases = ['./data/driving_log_short.csv']
 
 for location in databases:
@@ -182,9 +217,9 @@ for location in databases:
                 
 if visualize == True:
     visualize_steering(lines)
+    visualize_aug_images(lines)
 
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
-print(train_samples[-1])
 train_generator = generator(train_samples, batch_size, True)
 validation_generator = generator(validation_samples, batch_size, False)
 #train_generator = np.array(train_generator)
@@ -202,7 +237,7 @@ model.add(Convolution2D(24, 5,5,subsample=(2,2), activation='relu'))
 model.add(Convolution2D(36, 5,5,subsample=(2,2), activation='relu'))
 #model.add(Dropout(0.5))
 model.add(Convolution2D(48, 5,5,subsample=(2,2), activation='relu'))
-#model.add(Dropout(0.5))
+model.add(Dropout(0.5))
 model.add(Convolution2D(64, 3,3, activation='relu'))
 #model.add(Dropout(0.5))
 model.add(Convolution2D(64, 3,3, activation='relu'))
@@ -231,7 +266,7 @@ for i in range(0,10):
     #steps_per_epoch=len(np.unique(train_samples))/batch_size
     history_object = model.fit_generator(train_generator, samples_per_epoch=len(train_samples)/batch_size, 
                                          validation_data=validation_generator, nb_val_samples=len(validation_samples)/batch_size, 
-                                         nb_epoch=3, callbacks=[checkpointer, csv_logger])
+                                         nb_epoch=5, callbacks=[checkpointer, csv_logger])
     
     model.save(modelEnd)
     model.save(modelName)
