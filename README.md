@@ -18,10 +18,10 @@ The goals / steps of this project are the following:
 [image1]: ./report_images/NVIDIA_model.png
 [image2]:  ./report_images/aug_img_lighting_pre.jpg
 [image3]:  ./report_images/aug_img_lighting_post.jpg
-[image4]:  ./report_images/aug_img_trans_pre.png
-[image5]:  ./report_images/aug_img_trans_post.png
-[image6]:  ./report_images/NVIDIA_model.png
-[image7]:  ./report_images/NVIDIA_model.png
+[image4]:  ./report_images/aug_img_trans_pre.jpg
+[image5]:  ./report_images/aug_img_trans_post.jpg
+[image6]:  ./report_images/NVIDIA_model.jpg
+[image7]:  ./report_images/NVIDIA_model.jpg
 
 ## Rubric Points
 ### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
@@ -55,7 +55,7 @@ My model is essentially the NVIDIA architecture with the addition of a dropout l
 The images by from the simulator are in BGR format so must be converted to RGB. Additionally to use the additional mirror cameras the steering angle must be updated accordingly. This will be discussed further below.
 The actual NVIDIA architecture is as follows
 
-![alt text] [image1]
+![alt text][image1]
 
 The actual implementation was as follows:
 
@@ -94,7 +94,7 @@ The following  random image augmentation was applied:
 In steps 2 and 3 above the steering value (degs) also had to be updated accordingly. The following blocks of code will give a breakdown of how each augmentation technique was applied.
 In all cases randint is used very often to create a random probability that augmentation will be to images. 
 
-** Change image lighting **
+**Change image lighting**
 Each training image had a random lighting augmentation applied. Across all 3 techniques images are first randomly selected for augmentation and also then have a random augmentation applied accordingly. 
 This ensures that the network always receives new data and does not overfitting the data.
 
@@ -120,7 +120,7 @@ To augment the lighting conditions the image is converted to HSV and then random
 The image on the left is the original image, whislt the image on the right has been made darker by this augmentation. This is very important as the bonus track contains a lot of shadows whilst the first track is generally very bright.
 ![alt text][image2] ![alt text][image3]
 
-** Translate the image **
+**Translate the image**
 
 The next step was to shift the image in both X and Y directions.By doing this it simulates hilly conditions which is very prominent in the bonus track. 
 Note also at this point the steering needs to be updated as shift per pixel in the x axis. A shift per pixel value of 0.004 was decided upon through trial and error testing.
@@ -153,7 +153,7 @@ Finally the image augmentation is applied to both X and Y axis, also the steerin
 The following images show this augmentation: Left is pre shift and right is post
 ![alt text][image4] ![alt text][image5]
 
-** Flip the image **
+**Flip the image**
 
 ####3. Model parameter tuning
 
