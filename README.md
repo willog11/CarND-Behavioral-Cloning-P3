@@ -3,7 +3,7 @@
 
 ---
 
-** Behavioral Cloning Project**
+**Behavioral Cloning Project**
 
 The goals / steps of this project are the following:
 * Use the simulator to collect data of good driving behavior
@@ -76,6 +76,7 @@ In steps 2 and 3 above the steering value (degs) also had to be updated accordin
 In all cases randint is used very often to create a random probability that augmentation will be to images. 
 
 **Change image lighting**
+
 Each training image had a random lighting augmentation applied. Across all 3 techniques images are first randomly selected for augmentation and also then have a random augmentation applied accordingly. 
 This ensures that the network always receives new data and does not over-fitting the data.
 
@@ -188,19 +189,19 @@ It results in the following graphs:
 
 ![alt text][image10] ![alt text][image11]
 
-####3. Model parameter tuning
+#### 3. Model parameter tuning
 
 The model used an adam optimizer, so the learning rate was not tuned manually.
 
-####4. Appropriate training data
+#### 4. Appropriate training data
 
 Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from both sides, driving the first track in reverse and recaptures of difficult cases such as corners with dirt edges. Finally I captured 3 laps on the second track as I wanted to ensure it performed well there too. This track is much more difficult as its a very different scenario and lighting conditions. Also the turns are more severe and the roads have much different edges than track 1.
 
 For details about how I created the training data, see the next section. 
 
-###Model Architecture and Training Strategy
+### Model Architecture and Training Strategy
 
-####1. Solution Design Approach
+#### 1. Solution Design Approach
 
 The overall strategy for deriving a model architecture was to ...
 
@@ -320,6 +321,12 @@ for i in range(0,10):
     plt.savefig(test_num+"error_graph.jpeg", bbox_inches='tight')
 ~~~
 
-As it can be seen only 5 epochs were required to create a functioning network. However bare in mind that 45,327 images were actually used in the model so each epoch even on a TitanX GPU took aprox 3mins (15-20mins to build a model). Also the adam optimiser was used to generate the mean squared error (mse). This was a very effective approach as can be seen in the resulting model
+As it can be seen only 5 epochs were required to create a functioning network. However bare in mind that 45,327 images were actually used in the model so each epoch even on a TitanX GPU took aprox 3mins (15-20mins to build a model). Also the adam optimiser was used to generate the mean squared error (mse). This was a very effective approach as can be seen in the resulting model.
+
+In the current folder can be found track1.mp4 and track2.mp4 which are the recordings from the replayed network. These videos show the very good performance of the model from the front camera.
+
+For ease of demo I have also uploaded the track videos on YouTube and added the thumbnails below
+
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/376WcJqSrwk/0.jpg)](http://www.youtube.com/watch?v=376WcJqSrwk)
 
 
