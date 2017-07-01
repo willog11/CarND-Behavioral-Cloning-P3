@@ -327,6 +327,10 @@ In the current folder can be found track1.mp4 and track2.mp4 which are the recor
 
 For ease of demo I have also uploaded the track videos on YouTube and added the thumbnails below
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/376WcJqSrwk/0.jpg)](http://www.youtube.com/watch?v=376WcJqSrwk)
+**Track 1 Demo**
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/https://youtu.be/32Ep9985M0Y/0.jpg)](http://www.youtube.com/watch?v=https://youtu.be/32Ep9985M0Y)
+
+**Track 2 Demo**
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/https://youtu.be/IUREPTEzMMU/0.jpg)](http://www.youtube.com/watch?v=https://youtu.be/IUREPTEzMMU)
 
 
