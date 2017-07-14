@@ -329,11 +329,11 @@ For ease of demo I have also uploaded the track videos on YouTube and added the 
 
 **Track 1 Demo**
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/32Ep9985M0Y/0.jpg)](http://www.youtube.com/watch?v=https://youtu.be/32Ep9985M0Y)
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/32Ep9985M0Y/0.jpg)](http://www.youtube.com/watch?v=32Ep9985M0Y)
 
 
 **Track 2 Demo**
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/IUREPTEzMMU/0.jpg)](http://www.youtube.com/watch?v=https://youtu.be/IUREPTEzMMU)
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/IUREPTEzMMU/0.jpg)](http://www.youtube.com/watch?v=IUREPTEzMMU)
 
 
